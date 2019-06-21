@@ -12,12 +12,14 @@ import (
 	"cloud.google.com/go/pubsub"
 	"github.com/gorilla/mux"
 
+	dst "github.com/xallcloud/api/datastore"
+	pbt "github.com/xallcloud/api/proto"
 	gcp "github.com/xallcloud/gcp"
 )
 
 const (
 	appName          = "svc-notify"
-	appVersion       = "0.0.1-alfa.1-hello-world"
+	appVersion       = "0.0.1-alfa.3-simulated-responses"
 	httpPort         = "8082"
 	topicSubDispatch = "dispatch"
 	topicPubReply    = "reply"
@@ -80,8 +82,60 @@ func main() {
 		log.Fatal(err)
 	}
 
+	notifChannel := make(chan *pbt.Notification)
+
 	// subscribe to incoming message
-	go subscribeTopicDispatch()
+	go subscribeTopicDispatch(notifChannel)
+
+	go func() {
+		for {
+			select {
+			case n := <-notifChannel:
+
+				log.Printf("[CHANNEL]: notification %s -------------------------------", n.NtID)
+
+				ctx := context.Background()
+
+				log.Println("[CHANNEL] [SIMULATION] ntID:", n.NtID, "START >>>>>>>>>>>>>>>")
+
+				//insert into events
+				e := &dst.Event{
+					NtID:          n.NtID,
+					CpID:          "",
+					DvID:          "",
+					Visibility:    gcp.VisibilityAll,
+					EvType:        gcp.EvTypeDevices,
+					EvSubType:     gcp.EvSubTypeReaching,
+					EvDescription: "Reaching end device...",
+				}
+
+				log.Println("[CHANNEL] [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+				addNewEvent(ctx, e)
+
+				e.EvSubType = gcp.EvSubTypeDelivered
+				e.EvDescription = "Message delivered to end device."
+
+				log.Println("[CHANNEL] [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+				addNewEvent(ctx, e)
+
+				e.EvSubType = gcp.EvSubTypeReply
+				e.EvDescription = "User response: ack"
+
+				log.Println("[CHANNEL] [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+				addNewEvent(ctx, e)
+
+				e.EvType = gcp.EvTypeEnded
+				e.EvSubType = ""
+				e.EvDescription = "User response: ack"
+
+				log.Println("[CHANNEL] [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+				addNewEvent(ctx, e)
+
+				log.Println("[CHANNEL] [SIMULATION] ntID:", n.NtID, "END! <<<<<<<<<<<<<<<<")
+			}
+		}
+
+	}()
 
 	/////////////////////////////////////////////////////////////////////////
 	// HTTP SERVER

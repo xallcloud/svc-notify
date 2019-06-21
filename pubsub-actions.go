@@ -12,45 +12,7 @@ import (
 	pbt "github.com/xallcloud/api/proto"
 )
 
-func pullMsgs(client *pubsub.Client, sub *pubsub.Subscription, topic *pubsub.Topic) error {
-	log.Printf("[pullMsgs] starting: %s | %s\n", sub.String(), topic.String())
-	ctx := context.Background()
-
-	var mu sync.Mutex
-	received := 0
-	cctx, cancel := context.WithCancel(ctx)
-
-	log.Printf("[pullMsgs] before Receive %v\n", sub)
-
-	err := sub.Receive(cctx, func(ctx context.Context, msg *pubsub.Message) {
-		msg.Ack()
-		log.Printf("Got RAW message : %q\n", string(msg.Data))
-
-		//decode message
-		a, er := decodeRawNotification(msg.Data)
-
-		if er != nil {
-			log.Printf("[sub.Receive] error decoding message: %v\n", er)
-		}
-
-		log.Printf("[sub.Receive] Process message [acID:%s]\n", a.AcID)
-
-		mu.Lock()
-		defer mu.Unlock()
-		received++
-		if received == 1 {
-			cancel()
-		}
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func subscribeTopicDispatch() {
+func subscribeTopicDispatch(nc chan *pbt.Notification) {
 	log.Printf("[subscribe] starting goroutine: %s | %s\n", sub.String(), tcSubDis.String())
 
 	var mu sync.Mutex
@@ -88,6 +50,10 @@ func subscribeTopicDispatch() {
 			return
 		}
 		log.Printf("[subscribe] DONE (KeyID=%d) (AcID=%s)\n", notification.KeyID, notification.AcID)
+
+		log.Printf("[subscribe] Send notification to channel (NtID=%d) (AcID=%s)\n", notification.NtID, notification.AcID)
+		nc <- notification
+
 	})
 
 	if err != nil {
