@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/gogo/protobuf/proto"
@@ -16,32 +15,17 @@ import (
 //  and process the basic message
 func subscribeTopicDispatch(channel chan *pbt.Notification) {
 	log.Printf("[subscribe] starting goroutine: %s | %s\n", sub.String(), tcSubDis.String())
-
-	// generic counters need a mutex since they run in gouroutines
-	var mu sync.Mutex
-	received := 0
-	failed := 0
-
 	ctx := context.Background()
 	err := sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
-		// always acnowledge message
+		// always acknowledge message
 		msg.Ack()
 
-		mu.Lock()
-		received++
-		mu.Unlock()
-
-		log.Printf("[subscribe] Got RAW message [%d]: %q\n", received, string(msg.Data))
+		log.Printf("[subscribe] Got RAW message: %q\n", string(msg.Data))
 
 		//decode notification message into proper format
 		notification, er := decodeRawNotification(msg.Data)
 		if er != nil {
 			log.Printf("[subscribe] error decoding action message: %v\n", er)
-
-			mu.Lock()
-			failed++
-			mu.Unlock()
-
 			return
 		}
 
@@ -50,19 +34,13 @@ func subscribeTopicDispatch(channel chan *pbt.Notification) {
 		er = ProcessNewNotification(notification)
 		if er != nil {
 			log.Printf("[subscribe] error processing action: %v\n", er)
-
-			mu.Lock()
-			failed++
-			mu.Unlock()
-
 			return
 		}
-		log.Printf("[subscribe] DONE (KeyID=%d) (AcID=%s)\n", notification.KeyID, notification.AcID)
 
-		log.Printf("[subscribe] Send notification to channel (NtID=%s) (AcID=%s)\n", notification.NtID, notification.AcID)
-
-		//send notification to be processed
+		//send notification to be processed by simulator
 		channel <- notification
+
+		log.Printf("[subscribe] DONE (KeyID=%d) (ntID=%s)\n", notification.KeyID, notification.NtID)
 	})
 
 	if err != nil {
