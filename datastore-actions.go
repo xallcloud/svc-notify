@@ -22,30 +22,15 @@ func ProcessNewNotification(a *pbt.Notification) error {
 	//insert into events
 	e := &dst.Event{
 		NtID:          a.NtID,
-		CpID:          "",
-		DvID:          "",
+		CpID:          a.CpID,
+		DvID:          a.DvID,
 		Visibility:    gcp.VisibilityServer,
 		EvType:        gcp.EvTypeServices,
-		EvSubType:     "pubsub" + appVersion,
-		EvDescription: "Got message on notify service",
+		EvSubType:     "pubsub",
+		EvDescription: "Got Notification on svc-notify.",
 	}
 
 	addNewEvent(ctx, e)
-	/*
-		pn := &pbt.Notification{
-			NtID:          dsn.NtID,
-			AcID:          dsn.AcID,
-			Priority:      dsn.Priority,
-			Category:      dsn.Category,
-			Destination:   dsn.Destination,
-			Message:       dsn.Message,
-			ResponseTitle: dsn.ResponseTitle,
-			Options:       dsn.Options,
-		}*/
-
-	//publishNotification(pn)
-
-	//also start new message to publish to
 
 	log.Println("[ProcessNewNotification] DONE! no errors.")
 

@@ -61,8 +61,8 @@ func simulateDelivery(n *pbt.Notification) {
 		DvID:          n.DvID,
 		Visibility:    gcp.VisibilityAll,
 		EvType:        gcp.EvTypeDevices,
-		EvSubType:     gcp.EvSubTypeReaching + appVersion,
-		EvDescription: "Reaching end device...",
+		EvSubType:     gcp.EvSubTypeReaching,
+		EvDescription: "Attempting to reach end device.",
 	}
 
 	log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
@@ -78,14 +78,14 @@ func simulateDelivery(n *pbt.Notification) {
 
 	switch option {
 	case opDeliverDelivered:
-		e.EvSubType = gcp.EvSubTypeDelivered + appVersion
+		e.EvSubType = gcp.EvSubTypeDelivered
 		e.EvDescription = "Message delivered to end device."
 	case opDeliverFailed:
-		e.EvSubType = gcp.EvSubTypeFailed + appVersion
+		e.EvSubType = gcp.EvSubTypeFailed
 		e.EvDescription = "Failed to deliver message to end device."
 	case opDeliverTimeout:
-		e.EvSubType = gcp.EvSubTypeTimeout + appVersion
-		e.EvDescription = "Timeout trying to delivered to end device."
+		e.EvSubType = gcp.EvSubTypeTimeout
+		e.EvDescription = "Timeout trying to deliver message to end device."
 	}
 
 	log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
@@ -103,10 +103,10 @@ func simulateDelivery(n *pbt.Notification) {
 
 		switch option {
 		case opReplyACK:
-			e.EvSubType = gcp.EvSubTypeReply + appVersion
+			e.EvSubType = gcp.EvSubTypeReply
 			e.EvDescription = "User response: ack"
 		case opReplyCancel:
-			e.EvSubType = gcp.EvSubTypeReply + appVersion
+			e.EvSubType = gcp.EvSubTypeReply
 			e.EvDescription = "User response: cancel"
 		}
 
@@ -121,8 +121,8 @@ func simulateDelivery(n *pbt.Notification) {
 	randomSleepMs(100)
 
 	e.EvType = gcp.EvTypeEnded
-	e.EvSubType = "" + appVersion
-	e.EvDescription = "Notification finalized"
+	e.EvSubType = "final"
+	e.EvDescription = "Notification reached final state."
 
 	log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
 	addNewEvent(ctx, e)
