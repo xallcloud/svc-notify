@@ -26,7 +26,7 @@ func ProcessNewNotification(a *pbt.Notification) error {
 		DvID:          "",
 		Visibility:    gcp.VisibilityServer,
 		EvType:        gcp.EvTypeServices,
-		EvSubType:     "pubsub",
+		EvSubType:     "pubsub" + appVersion,
 		EvDescription: "Got message on notify service",
 	}
 

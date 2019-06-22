@@ -51,9 +51,9 @@ func subscribeTopicDispatch(nc chan *pbt.Notification) {
 		}
 		log.Printf("[subscribe] DONE (KeyID=%d) (AcID=%s)\n", notification.KeyID, notification.AcID)
 
-		log.Printf("[subscribe] Send notification to channel (NtID=%d) (AcID=%s)\n", notification.NtID, notification.AcID)
+		log.Printf("[subscribe] Send notification to channel (NtID=%s) (AcID=%s)\n", notification.NtID, notification.AcID)
+		//send notification to be processed
 		nc <- notification
-
 	})
 
 	if err != nil {

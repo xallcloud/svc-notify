@@ -18,7 +18,7 @@ import (
 
 const (
 	appName          = "svc-notify"
-	appVersion       = "0.0.1-alfa.4-simulator"
+	appVersion       = "n.6-fix"
 	httpPort         = "8082"
 	topicSubDispatch = "dispatch"
 	topicPubReply    = "reply"
