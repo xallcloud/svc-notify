@@ -25,6 +25,7 @@ const (
 	opReplyCancel = 2
 )
 
+// randomSleepMs sleeps for a random time to a max of X milliseconds
 func randomSleepMs(max int) {
 	rand.Seed(time.Now().UnixNano())
 	n := rand.Intn(max)
@@ -33,7 +34,7 @@ func randomSleepMs(max int) {
 	log.Printf("[randomSleep] sleeping for %d miliseconds, DONE!\n", n)
 }
 
-//randomInt return a value between 1 and max (inclusive)
+//randomOption returns a valid random option between 1 and max (inclusive)
 func randomOption(max int) int {
 	var n int
 	if max <= 1 {
@@ -41,39 +42,32 @@ func randomOption(max int) int {
 	}
 	n = rand.Intn(max - 1)
 	n = n + 1
-
 	log.Printf("[randomInt] return %d (max=%d)...\n", n, max)
-
 	return n
 }
 
-//simulateDelivery will simulate different scenarios while trying to reach a device do deliver a notification
+//simulateDelivery will simulate different scenarios while trying to
+//  reach a device do deliver a notification
 func simulateDelivery(n *pbt.Notification) {
-
+	// initialization
 	var option int
-
 	ctx := context.Background()
-
-	//insert into events
 	e := &dst.Event{
-		NtID:          n.NtID,
-		CpID:          n.CpID,
-		DvID:          n.DvID,
-		Visibility:    gcp.VisibilityAll,
-		EvType:        gcp.EvTypeDevices,
-		EvSubType:     gcp.EvSubTypeReaching,
-		EvDescription: "Attempting to reach end device.",
+		NtID:       n.NtID,
+		CpID:       n.CpID,
+		DvID:       n.DvID,
+		Visibility: gcp.VisibilityAll,
+		EvType:     gcp.EvTypeDevices,
 	}
 
-	log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+	//add initial event
+	e.EvSubType = gcp.EvSubTypeReaching
+	e.EvDescription = "Attempting to reach end device."
+	log.Println("    [SIMULATION] ntID:", n.NtID, "-", e.EvDescription)
 	addNewEvent(ctx, e)
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	// delivery
-	/////////////////////////////////////////////////////////////////////////////////////////
-
+	//simulate delivery after X ms
 	randomSleepMs(100)
-
 	option = randomOption(opDeliverMax)
 
 	switch option {
@@ -88,17 +82,13 @@ func simulateDelivery(n *pbt.Notification) {
 		e.EvDescription = "Timeout trying to deliver message to end device."
 	}
 
-	log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+	log.Println("    [SIMULATION] ntID:", n.NtID, "-", e.EvDescription)
 	addNewEvent(ctx, e)
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	// Deliverd sub states
-	/////////////////////////////////////////////////////////////////////////////////////////
-
+	// if the simulator delivered the message
+	//   then continue with selecting options after X ms
 	if option == opDeliverDelivered {
-
 		randomSleepMs(5000)
-
 		option = randomOption(opReplyMax)
 
 		switch option {
@@ -110,20 +100,16 @@ func simulateDelivery(n *pbt.Notification) {
 			e.EvDescription = "User response: cancel"
 		}
 
-		log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
+		log.Println("    [SIMULATION] ntID:", n.NtID, "-", e.EvDescription)
 		addNewEvent(ctx, e)
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	// finalized state
-	/////////////////////////////////////////////////////////////////////////////////////////
-
+	// add final event indicating that notification is finalized
 	randomSleepMs(100)
 
 	e.EvType = gcp.EvTypeEnded
 	e.EvSubType = "final"
 	e.EvDescription = "Notification reached final state."
-
 	log.Println("    [SIMULATION] ncID:", n.NtID, "-", e.EvDescription)
 	addNewEvent(ctx, e)
 }

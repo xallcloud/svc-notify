@@ -12,14 +12,10 @@ import (
 // ProcessNewNotification will process new notifications from and start the process
 //   of initializing it, and deliver it after
 func ProcessNewNotification(a *pbt.Notification) error {
-	//first all, check the database for the record:
-	log.Println("[ProcessNewNotification] TODO...")
-
 	ctx := context.Background()
 
-	log.Println("[ProcessNewNotification] check if action exists acID:", a.AcID)
+	log.Println("[ProcessNewNotification] just add event ntID:", a.NtID)
 
-	//insert into events
 	e := &dst.Event{
 		NtID:          a.NtID,
 		CpID:          a.CpID,
@@ -32,7 +28,7 @@ func ProcessNewNotification(a *pbt.Notification) error {
 
 	addNewEvent(ctx, e)
 
-	log.Println("[ProcessNewNotification] DONE! no errors.")
+	log.Println("[ProcessNewNotification] Ended with no erros")
 
 	return nil
 }

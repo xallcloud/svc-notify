@@ -65,7 +65,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Using topic %v to subscribe notify.\n", tcSubDis)
+	log.Printf("Using topic %v to subscribe dispatch.\n", tcSubDis)
 
 	// create subscriptions to topic dispatch
 	sub, err = gcp.CreateSub(psClient, topicSubDispatch, tcSubDis)
@@ -116,7 +116,7 @@ func main() {
 			log.Printf("\nReceived an interrupt! Tearing down...\n\n")
 			// Delete the subscription.
 			log.Printf("delete subscription %s\n", topicSubDispatch)
-			if err := delete(psClient, topicSubDispatch); err != nil {
+			if err := gcp.DeleteSubscription(psClient, topicSubDispatch); err != nil {
 				log.Fatal(err)
 			}
 			cleanupDone <- true
