@@ -18,13 +18,14 @@ import (
 
 const (
 	appName          = "svc-notify"
-	appVersion       = "n.1.7-msgs"
-	httpPort         = "8082"
+	appVersion       = "n.3.9-cleanup"
+	httpDefaultPort  = "8082"
 	topicSubDispatch = "dispatch"
 	topicPubReply    = "reply"
 	projectID        = "xallcloud"
 )
 
+// global resources for service
 var dsClient *datastore.Client
 var psClient *pubsub.Client
 var tcSubDis *pubsub.Topic
@@ -32,26 +33,28 @@ var tcPubRep *pubsub.Topic
 var sub *pubsub.Subscription
 
 func main() {
-	/////////////////////////////////////////////////////////////////////////
-	// Setup
-	/////////////////////////////////////////////////////////////////////////
+	// service initialization
+	log.SetFlags(log.Lshortfile)
+
+	log.Println("Starting", appName, "version", appVersion)
+
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = httpPort
+		port = httpDefaultPort
 		log.Printf("Service: %s. Defaulting to port %s", appName, port)
 	}
 
 	var err error
 	ctx := context.Background()
-	// DATASTORE Initialization
-	log.Println("Connect to Google 'datastore' on project: " + projectID)
 
+	// DATASTORE initialization
+	log.Println("Connect to Google 'datastore' on project: " + projectID)
 	dsClient, err = datastore.NewClient(ctx, projectID)
 	if err != nil {
 		log.Fatalf("Failed to create datastore client: %v", err)
 	}
 
-	// PUBSUB Initialization
+	// PUBSUB initialization
 	log.Println("Connect to Google 'pub/sub' on project: " + projectID)
 	psClient, err = pubsub.NewClient(ctx, projectID)
 	if err != nil {
@@ -65,7 +68,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Using topic %v to post reply.\n", tcPubRep)
+	log.Printf("Using topic %v to post reply.\n", tcPubRep)
 
 	///////////////////////////////////////////////////////////////////
 	// topic to subscribe
@@ -73,7 +76,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Using topic %v to subscribe notify.\n", tcSubDis)
+	log.Printf("Using topic %v to subscribe notify.\n", tcSubDis)
 
 	// create subscriptions tp new topic
 	sub, err = gcp.CreateSub(psClient, topicSubDispatch, tcSubDis)
@@ -128,7 +131,7 @@ func main() {
 			log.Printf("\nReceived an interrupt! Tearing down...\n\n")
 
 			// Delete the subscription.
-			fmt.Printf("delete subscription %s\n", topicSubDispatch)
+			log.Printf("delete subscription %s\n", topicSubDispatch)
 			if err := delete(psClient, topicSubDispatch); err != nil {
 				log.Fatal(err)
 			}
