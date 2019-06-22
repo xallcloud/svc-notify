@@ -29,7 +29,6 @@ const (
 var dsClient *datastore.Client
 var psClient *pubsub.Client
 var tcSubDis *pubsub.Topic
-var tcPubRep *pubsub.Topic
 var sub *pubsub.Subscription
 
 func main() {
@@ -61,41 +60,30 @@ func main() {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 
-	///////////////////////////////////////////////////////////////////
-	// topic to publish messages
-	tcPubRep, err = gcp.CreateTopic(topicPubReply, psClient)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Using topic %v to post reply.\n", tcPubRep)
-
-	///////////////////////////////////////////////////////////////////
-	// topic to subscribe
+	// topic to subscribe messages of type dispatch
 	tcSubDis, err = gcp.CreateTopic(topicSubDispatch, psClient)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("Using topic %v to subscribe notify.\n", tcSubDis)
 
-	// create subscriptions tp new topic
+	// create subscriptions to topic dispatch
 	sub, err = gcp.CreateSub(psClient, topicSubDispatch, tcSubDis)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// create a channel to process incomming notifications
 	notifChannel := make(chan *pbt.Notification)
 
-	// subscribe to incoming message
+	// subscribe to incoming message in a different goroutine
 	go subscribeTopicDispatch(notifChannel)
 
+	// wait for notification in a different go routine
 	go func() {
 		for {
 			select {
 			case n := <-notifChannel:
-
-				log.Printf("[CHANNEL]: notification %s -------------------------------", n.NtID)
-
 				log.Println("[CHANNEL] [SIMULATION] ntID:", n.NtID, "START >>>>>>>>>>>>>>>")
 
 				simulateDelivery(n)
@@ -103,25 +91,22 @@ func main() {
 				log.Println("[CHANNEL] [SIMULATION] ntID:", n.NtID, "END! <<<<<<<<<<<<<<<<")
 			}
 		}
-
 	}()
 
-	/////////////////////////////////////////////////////////////////////////
-	// HTTP SERVER
-	/////////////////////////////////////////////////////////////////////////
+	// HTTP Server initialization
+	// define all the routes for the HTTP server.
+	//   The implementation is done on the "handlers.go" files
 	router := mux.NewRouter()
 	router.HandleFunc("/api/version", getVersionHanlder).Methods("GET")
 	router.HandleFunc("/", getStatusHanlder).Methods("GET")
 
+	// start HTTP Server in new goroutine to allow other code to execute after
 	go func() {
 		log.Printf("Service: %s. Listening on port %s", appName, port)
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
 	}()
 
-	/////////////////////////////////////////////////////////////////////////
-	// logic
-	/////////////////////////////////////////////////////////////////////////
-
+	// clean up resources when service stops
 	log.Printf("wait for signal to terminate everything on client %s\n", appName)
 	signalChan := make(chan os.Signal, 1)
 	cleanupDone := make(chan bool)
@@ -129,15 +114,14 @@ func main() {
 	go func() {
 		for range signalChan {
 			log.Printf("\nReceived an interrupt! Tearing down...\n\n")
-
 			// Delete the subscription.
 			log.Printf("delete subscription %s\n", topicSubDispatch)
 			if err := delete(psClient, topicSubDispatch); err != nil {
 				log.Fatal(err)
 			}
-
 			cleanupDone <- true
 		}
 	}()
+	// wait for service to terminate
 	<-cleanupDone
 }
