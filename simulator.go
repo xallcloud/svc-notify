@@ -40,7 +40,7 @@ func randomOption(max int) int {
 	if max <= 1 {
 		n = 1
 	}
-	n = rand.Intn(max - 1)
+	n = rand.Intn(max)
 	n = n + 1
 	log.Printf("[randomInt] return %d (max=%d)...\n", n, max)
 	return n
@@ -67,7 +67,7 @@ func simulateDelivery(n *pbt.Notification) {
 	addNewEvent(ctx, e)
 
 	//simulate delivery after X ms
-	randomSleepMs(100)
+	randomSleepMs(5000)
 	option = randomOption(opDeliverMax)
 
 	switch option {
